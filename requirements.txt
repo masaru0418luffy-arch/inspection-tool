@@ -1,0 +1,7 @@
+streamlit
+flask
+anthropic
+openpyxl
+pdfplumber
+pillow
+python-dotenv

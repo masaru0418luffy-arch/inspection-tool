@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>住宅アフター点検 報告書生成ツール</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    background: #f0f4f8;
+    color: #2d3748;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #1F4E79;
+    color: #fff;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  header .icon { font-size: 28px; }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.03em; }
+  header p { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+  main {
+    max-width: 820px;
+    margin: 32px auto;
+    padding: 0 16px 64px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    padding: 24px 28px;
+    margin-bottom: 22px;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1F4E79;
+    border-left: 4px solid #1F4E79;
+    padding-left: 10px;
+    margin-bottom: 18px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+  }
+
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #4a5568; }
+
+  input[type="text"],
+  input[type="date"],
+  textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: #1F4E79;
+    box-shadow: 0 0 0 3px rgba(31,78,121,0.1);
+  }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .full-width { grid-column: 1 / -1; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed #a0aec0;
+    border-radius: 8px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #f7fafc;
+  }
+  .drop-zone.dragover { border-color: #1F4E79; background: #ebf4ff; }
+  .drop-zone .dz-icon { font-size: 36px; margin-bottom: 8px; }
+  .drop-zone p { font-size: 13px; color: #718096; }
+  .drop-zone p strong { color: #1F4E79; }
+
+  #photo-input, #pdf-input { display: none; }
+
+  .thumbnails {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .thumb-item {
+    position: relative;
+    width: 90px;
+  }
+  .thumb-item img {
+    width: 90px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1.5px solid #e2e8f0;
+    display: block;
+  }
+  .thumb-item .thumb-name {
+    font-size: 10px;
+    color: #718096;
+    margin-top: 3px;
+    text-align: center;
+    word-break: break-all;
+    line-height: 1.3;
+  }
+  .thumb-item .remove-btn {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #e53e3e;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 20px;
+    text-align: center;
+    padding: 0;
+  }
+
+  .pdf-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1.5px solid #cbd5e0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #4a5568;
+    background: #f7fafc;
+    transition: border-color 0.2s;
+  }
+  .pdf-label:hover { border-color: #1F4E79; }
+  .pdf-label .pdf-icon { font-size: 22px; }
+  #pdf-name { font-size: 13px; color: #718096; flex: 1; }
+
+  /* Generate button */
+  .btn-generate {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: #1F4E79;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.05em;
+  }
+  .btn-generate:hover:not(:disabled) { background: #163d5e; }
+  .btn-generate:active:not(:disabled) { transform: scale(0.98); }
+  .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Overlay spinner */
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 30, 55, 0.65);
+    z-index: 999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  #overlay.active { display: flex; }
+
+  .spinner {
+    width: 56px; height: 56px;
+    border: 5px solid rgba(255,255,255,0.25);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .step-msg {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    background: rgba(0,0,0,0.35);
+    padding: 10px 22px;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  /* Error toast */
+  #toast {
+    display: none;
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%);
+    background: #c53030;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 1000;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+  #toast.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="icon">🏠</div>
+  <div>
+    <h1>住宅アフター点検 報告書生成ツール</h1>
+    <p>写真・PDF・メモをアップロードしてJIO形式のExcel報告書を自動生成</p>
+  </div>
+</header>
+
+<main>
+  <form id="main-form" enctype="multipart/form-data">
+
+    <!-- Basic info -->
+    <div class="card">
+      <div class="card-title">基本情報</div>
+      <div class="form-grid">
+        <div>
+          <label for="property_name">登録物件名</label>
+          <input type="text" id="property_name" name="property_name" placeholder="例：T邸">
+        </div>
+        <div>
+          <label for="property_no">登録番号（Y番号）</label>
+          <input type="text" id="property_no" name="property_no" placeholder="例：Y3284262">
+        </div>
+        <div>
+          <label for="company_name">事業者名</label>
+          <input type="text" id="company_name" name="company_name" placeholder="例：SODESIGN株式会社">
+        </div>
+        <div>
+          <label for="company_no">会社番号（A番号）</label>
+          <input type="text" id="company_no" name="company_no" placeholder="例：A2005318">
+        </div>
+        <div>
+          <label for="delivery_date">引渡し年月</label>
+          <input type="text" id="delivery_date" name="delivery_date" placeholder="例：2024年11月">
+        </div>
+        <div>
+          <label for="inspection_date">実施日</label>
+          <input type="date" id="inspection_date" name="inspection_date">
+        </div>
+        <div>
+          <label for="inspector">報告者名</label>
+          <input type="text" id="inspector" name="inspector" placeholder="例：山田　太郎">
+        </div>
+        <div></div>
+      </div>
+    </div>
+
+    <!-- Photos -->
+    <div class="card">
+      <div class="card-title">現場写真</div>
+      <div class="drop-zone" id="drop-zone">
+        <div class="dz-icon">📷</div>
+        <p><strong>クリックまたはドラッグ＆ドロップ</strong>で写真を追加</p>
+        <p>JPG / PNG / HEIC 対応（複数可）</p>
+      </div>
+      <input type="file" id="photo-input" name="photos" accept="image/*" multiple>
+      <div class="thumbnails" id="thumbnails"></div>
+    </div>
+
+    <!-- PDF -->
+    <div class="card">
+      <div class="card-title">JIO点検報告書 PDF（任意）</div>
+      <label class="pdf-label" for="pdf-input">
+        <span class="pdf-icon">📄</span>
+        <span id="pdf-name">PDFファイルを選択（任意）</span>
+      </label>
+      <input type="file" id="pdf-input" name="pdf" accept=".pdf">
+    </div>
+
+    <!-- Notes -->
+    <div class="card">
+      <div class="card-title">担当者メモ</div>
+      <div class="form-grid">
+        <div class="full-width">
+          <label for="notes">気になる点・補足情報</label>
+          <textarea id="notes" name="notes" placeholder="例：2階廊下の壁クロスに浮きあり。玄関ドアの開閉が重い。"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-generate" id="submit-btn">
+      📊 Excel報告書を生成する
+    </button>
+
+  </form>
+</main>
+
+<!-- Spinner overlay -->
+<div id="overlay">
+  <div class="spinner"></div>
+  <div class="step-msg" id="step-msg">AIが写真・PDFを解析中...</div>
+</div>
+
+<!-- Error toast -->
+<div id="toast" id="toast"></div>
+
+<script>
+// ---- Photo management ----
+const dropZone = document.getElementById('drop-zone');
+const photoInput = document.getElementById('photo-input');
+const thumbnails = document.getElementById('thumbnails');
+let selectedFiles = [];
+
+dropZone.addEventListener('click', () => photoInput.click());
+
+dropZone.addEventListener('dragenter', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.remove('dragover');
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.remove('dragover');
+  const files = Array.from(e.dataTransfer.files).filter(f =>
+    f.type.startsWith('image/') || f.name.match(/\.(jpg|jpeg|png|gif|heic|heif|webp)$/i)
+  );
+  addFiles(files);
+});
+
+photoInput.addEventListener('change', () => {
+  addFiles(Array.from(photoInput.files));
+  photoInput.value = '';
+});
+
+function addFiles(files) {
+  files.forEach(file => {
+    if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+      selectedFiles.push(file);
+      renderThumb(file);
+    }
+  });
+}
+
+function renderThumb(file) {
+  const item = document.createElement('div');
+  item.className = 'thumb-item';
+  item.dataset.name = file.name;
+
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.alt = file.name;
+
+  const name = document.createElement('div');
+  name.className = 'thumb-name';
+  name.textContent = file.name.length > 18 ? file.name.slice(0,15) + '...' : file.name;
+
+  const btn = document.createElement('button');
+  btn.className = 'remove-btn';
+  btn.textContent = '×';
+  btn.title = '削除';
+  btn.type = 'button';
+  btn.addEventListener('click', () => {
+    selectedFiles = selectedFiles.filter(f => !(f.name === file.name && f.size === file.size));
+    item.remove();
+    URL.revokeObjectURL(img.src);
+  });
+
+  item.append(btn, img, name);
+  thumbnails.appendChild(item);
+}
+
+// ---- PDF ----
+const pdfInput = document.getElementById('pdf-input');
+const pdfName = document.getElementById('pdf-name');
+pdfInput.addEventListener('change', () => {
+  pdfName.textContent = pdfInput.files[0] ? pdfInput.files[0].name : 'PDFファイルを選択（任意）';
+});
+
+// ---- Step messages ----
+const steps = [
+  'AIが写真・PDFを解析中...',
+  '点検項目を生成しています...',
+  'Excelファイルを組み立て中...',
+  'もうすぐ完成です...',
+];
+let stepTimer = null;
+function startStepMessages() {
+  let idx = 0;
+  const msg = document.getElementById('step-msg');
+  msg.textContent = steps[0];
+  stepTimer = setInterval(() => {
+    idx = (idx + 1) % steps.length;
+    msg.textContent = steps[idx];
+  }, 4000);
+}
+function stopStepMessages() {
+  if (stepTimer) clearInterval(stepTimer);
+}
+
+// ---- Toast ----
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 6000);
+}
+
+// ---- Form submit ----
+document.getElementById('main-form').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const overlay = document.getElementById('overlay');
+  const btn = document.getElementById('submit-btn');
+
+  const fd = new FormData(e.target);
+  // Add accumulated photos
+  fd.delete('photos');
+  selectedFiles.forEach(f => fd.append('photos', f));
+
+  overlay.classList.add('active');
+  btn.disabled = true;
+  startStepMessages();
+
+  try {
+    const res = await fetch('/generate', { method: 'POST', body: fd });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: `HTTPエラー ${res.status}` }));
+      throw new Error(data.error || `HTTPエラー ${res.status}`);
+    }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      throw new Error(data.error || '不明なエラーが発生しました');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    const cd = res.headers.get('content-disposition') || '';
+    const match = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)/i);
+    let filename = match ? decodeURIComponent(match[1]) : '点検報告書.xlsx';
+
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+  } catch (err) {
+    showToast('エラー: ' + err.message);
+  } finally {
+    stopStepMessages();
+    overlay.classList.remove('active');
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
