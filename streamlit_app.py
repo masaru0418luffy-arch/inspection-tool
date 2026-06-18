@@ -40,7 +40,7 @@ st.markdown("""
 
 with st.form("inspection_form"):
 
-    COMPANY_NAME = "SODESIGN株式会社"
+    COMPANY_NAME = "SO DESIGN株式会社"
     company_name = COMPANY_NAME
     company_no   = ""
 
