@@ -91,13 +91,7 @@ def _build_report_sheet(wb: Workbook, data: dict):
 
     row = 1
 
-    # JIO label (small text above title, matching reference)
-    ws.merge_cells(f"A{row}:E{row}")
-    jio_cell = ws.cell(row=row, column=1, value="JIO（日本住宅保証検査機構）")
-    jio_cell.font = _font(size=9)
-    jio_cell.alignment = _left()
-    ws.row_dimensions[row].height = 14
-    row += 1
+    row += 1  # JIO表記なし（削除済み）
 
     # Title row — spaced characters, light yellow background
     ws.merge_cells(f"A{row}:E{row}")
