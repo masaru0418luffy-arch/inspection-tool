@@ -116,11 +116,12 @@ def _build_report_sheet(wb: Workbook, data: dict):
     # 登録物件名 and 事業者名 have codes; others span B-E
     info_with_code = [
         ("登録物件名", data.get("property_name", ""), data.get("property_no", "")),
-        ("事業者名",   data.get("company_name", ""),  data.get("company_no", "")),
+        ("事業者名",   data.get("company_name", ""),  ""),
     ]
     info_no_code = [
         ("引渡し年月", data.get("delivery_date", "")),
         ("実施日",     data.get("inspection_date", "")),
+        ("点検日程",   data.get("inspection_term", "")),
         ("報告者",     data.get("inspector", "")),
     ]
 

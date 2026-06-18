@@ -40,17 +40,24 @@ st.markdown("""
 
 with st.form("inspection_form"):
 
+    COMPANY_NAME = "SODESIGN株式会社"
+    company_name = COMPANY_NAME
+    company_no   = ""
+
     st.subheader("📋 基本情報")
     c1, c2 = st.columns(2)
     with c1:
         property_name  = st.text_input("登録物件名",       placeholder="例：T邸")
-        company_name   = st.text_input("事業者名",          placeholder="例：SODESIGN株式会社")
+        st.text_input("事業者名", value=COMPANY_NAME, disabled=True)
         delivery_date  = st.text_input("引渡し年月",        placeholder="例：2024年11月")
         inspector      = st.text_input("報告者名",          placeholder="例：山田　太郎")
     with c2:
-        property_no    = st.text_input("登録番号（Y番号）", placeholder="例：Y3284262")
-        company_no     = st.text_input("会社番号（A番号）", placeholder="例：A2005318")
+        property_no     = st.text_input("登録番号（Y番号）", placeholder="例：Y3284262")
         inspection_date = st.date_input("実施日")
+        inspection_term = st.selectbox(
+            "点検日程",
+            ["1年", "2年", "5年", "10年", "15年", "25年", "30年"],
+        )
 
     st.subheader("📷 現場写真")
     photos = st.file_uploader(
@@ -206,11 +213,12 @@ methodは「AC」基本。写真がある場合はphoto_descriptionsに説明を
             overrides = {
                 "property_name": property_name,
                 "property_no": property_no,
-                "company_name": company_name,
-                "company_no": company_no,
+                "company_name": COMPANY_NAME,
+                "company_no": "",
                 "delivery_date": delivery_date,
                 "inspector": inspector,
                 "inspection_date": str(inspection_date),
+                "inspection_term": inspection_term,
             }
             for k, v in overrides.items():
                 if v:
