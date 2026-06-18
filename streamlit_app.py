@@ -34,7 +34,7 @@ st.markdown("""
 </style>
 <div class="header-box">
   <h1>🏠 住宅アフター点検 報告書生成ツール</h1>
-  <p>写真・PDF・メモをアップロードしてJIO形式のExcel報告書を自動生成</p>
+  <p>写真・PDF・メモをアップロードしてExcel報告書を自動生成</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -71,7 +71,7 @@ with st.form("inspection_form"):
             with cols[i % 5]:
                 st.image(photo, caption=photo.name, use_container_width=True)
 
-    st.subheader("📄 JIO点検報告書 PDF（任意）")
+    st.subheader("📄 点検報告書 PDF（任意）")
     pdf_file = st.file_uploader("PDFをアップロード", type=["pdf"])
 
     st.subheader("📝 担当者メモ")
@@ -133,7 +133,7 @@ if submitted:
 
             # --- Claude プロンプト ---
             sections_str = "、".join(SECTIONS)
-            prompt = f"""あなたは住宅アフター点検の専門家です。以下の情報を元に、JIO形式の点検報告書データをJSONで生成してください。
+            prompt = f"""あなたは住宅アフター点検の専門家です。以下の情報を元に、点検報告書データをJSONで生成してください。
 
 【基本情報】
 物件名: {property_name}
